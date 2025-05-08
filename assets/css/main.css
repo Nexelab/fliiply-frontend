@@ -12,8 +12,8 @@
 /* Appliquer la police Inter */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #F7FAFC;
-    color: #111820;
+    background-color: #0A0A0A; /* dark-900 */
+    color: #FFFFFF; /* Blanc */
 }
 
 /* S'assurer que les liens n'ont pas de style par défaut */
