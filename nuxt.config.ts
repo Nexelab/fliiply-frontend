@@ -8,9 +8,16 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     '@nuxt/icon',
     '@nuxt/image',
-    '@nuxt/ui',
+    '@nuxtjs/tailwindcss',
     '@nuxt/test-utils',
     '@nuxt/scripts',
     '@nuxt/content'
-  ]
+  ],
+  fonts: {
+    families: [
+      { name: 'Inter', provider: 'google' }
+    ]
+  },
+  css: ['~/assets/css/main.css'],
+  devtools: { enabled: true }
 })

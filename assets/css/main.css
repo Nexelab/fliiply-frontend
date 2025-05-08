@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset CSS */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Appliquer la police Inter */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #F7FAFC;
+    color: #111820;
+}
+
+/* S'assurer que les liens n'ont pas de style par défaut */
+a {
+    text-decoration: none;
+    color: inherit;
+}
