@@ -3,5 +3,5 @@
 </template>
 
 <script setup>
-navigateTo('/auth?tab=register', { replace: true })
+navigateTo('/login?tab=register', { replace: true })
 </script>

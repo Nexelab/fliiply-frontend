@@ -5,19 +5,22 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxt/eslint',
-    '@nuxt/fonts',
     '@nuxt/icon',
     '@nuxt/image',
     '@nuxtjs/tailwindcss',
     '@nuxt/test-utils',
     '@nuxt/scripts',
-    '@nuxt/content'
+    '@nuxt/content',
+    '@pinia/nuxt'
   ],
-  fonts: {
-    families: [
-      { name: 'Inter', provider: 'google' }
-    ]
+  pinia: {
+    autoImports: ['defineStore', 'acceptHMRUpdate']
   },
   css: ['~/assets/css/main.css'],
-  devtools: { enabled: true }
+  devtools: { enabled: true },
+  runtimeConfig: {
+    public: {
+      backendUrl: process.env.BACKEND_URL || 'http://localhost:8000'
+    }
+  }
 })

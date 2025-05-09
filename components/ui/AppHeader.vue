@@ -15,13 +15,76 @@
 
       <!-- Actions -->
       <div class="flex items-center space-x-4">
-        <AppButton to="/login?tab=register" variant="outline">S'inscrire</AppButton>
-        <AppButton to="/login?tab=login" variant="primary">Se connecter</AppButton>
+        <!-- Afficher les boutons "S'inscrire" et "Se connecter" si non connecté -->
+        <template v-if="!authStore.isAuthenticated">
+          <AppButton to="/login?tab=register" variant="outline">S'inscrire</AppButton>
+          <AppButton to="/login?tab=login" variant="primary">Se connecter</AppButton>
+        </template>
+
+        <!-- Afficher l'icône d'avatar et le sous-menu si connecté -->
+        <div v-else class="relative">
+          <!-- Icône d'avatar -->
+          <button @click="toggleMenu" class="flex items-center focus:outline-none">
+            <Icon name="mdi:account-circle" size="32" class="text-white hover:text-purple-500 transition-colors" />
+          </button>
+
+          <!-- Sous-menu déroulant -->
+          <div
+              v-if="isMenuOpen"
+              class="absolute right-0 mt-2 w-48 bg-dark-900 border border-gray-800 rounded-lg shadow-lg z-50"
+          >
+            <NuxtLink
+                to="/profile"
+                class="block px-4 py-2 text-white hover:bg-purple-500 hover:text-white transition-colors"
+                @click="closeMenu"
+            >
+              Profil
+            </NuxtLink>
+            <NuxtLink
+                to="/purchases"
+                class="block px-4 py-2 text-white hover:bg-purple-500 hover:text-white transition-colors"
+                @click="closeMenu"
+            >
+              Achats
+            </NuxtLink>
+            <button
+                @click="logout"
+                class="block w-full text-left px-4 py-2 text-white hover:bg-purple-500 hover:text-white transition-colors"
+            >
+              Déconnexion
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import AppButton from '~/components/ui/AppButton.vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '~/stores/auth'
+
+// Récupérer le store Pinia pour vérifier l'état de connexion
+const authStore = useAuthStore()
+const router = useRouter()
+
+// Gérer l'ouverture/fermeture du sous-menu
+const isMenuOpen = ref(false)
+
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+const closeMenu = () => {
+  isMenuOpen.value = false
+}
+
+// Gérer la déconnexion
+const logout = () => {
+  authStore.clearAuthData()
+  closeMenu()
+  router.push('/')
+}
 </script>
