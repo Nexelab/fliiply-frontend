@@ -10,9 +10,9 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                'dark-900': '#0A0A0A',  // Noir presque pur pour tous les fonds
-                'purple-500': '#6D28D9', // Violet sombre pour les accents
-                'gray-800': '#1F2A44'    // Gris foncé inspiré de StockX
+                'dark-900': '#0A0A0A',
+                'purple-500': '#b76bff',
+                'gray-800': '#43455c'
             }
         }
     },
