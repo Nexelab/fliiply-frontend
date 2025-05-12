@@ -23,9 +23,10 @@
 
         <!-- Afficher l'icône d'avatar et le sous-menu si connecté -->
         <div v-else class="relative">
-          <!-- Icône d'avatar -->
-          <button @click="toggleMenu" class="flex items-center focus:outline-none">
+          <!-- Icône d'avatar avec le username -->
+          <button @click="toggleMenu" class="flex items-center space-x-2 focus:outline-none">
             <Icon name="mdi:account-circle" size="32" class="text-white hover:text-purple-500 transition-colors" />
+            <span class="text-white font-semibold">{{ authStore.currentUser?.username || 'Utilisateur' }}</span>
           </button>
 
           <!-- Sous-menu déroulant -->
@@ -33,6 +34,9 @@
               v-if="isMenuOpen"
               class="absolute right-0 mt-2 w-48 bg-dark-900 border border-gray-800 rounded-lg shadow-lg z-50"
           >
+            <div class="px-4 py-2 text-white border-b border-gray-800">
+              Connecté en tant que <strong>{{ authStore.currentUser?.username || 'Utilisateur' }}</strong>
+            </div>
             <NuxtLink
                 to="/profile"
                 class="block px-4 py-2 text-white hover:bg-purple-500 hover:text-white transition-colors"

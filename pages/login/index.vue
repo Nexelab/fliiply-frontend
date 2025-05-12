@@ -21,30 +21,36 @@
     <!-- Formulaire d'inscription -->
     <div v-if="activeTab === 'register'">
       <h2 class="text-2xl font-bold mb-6 text-center">Créer un compte</h2>
-      <form class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleRegister">
         <div>
           <label for="username-register" class="block text-sm font-medium mb-1">Nom d'utilisateur</label>
           <input
               type="text"
               id="username-register"
+              v-model="registerForm.username"
               placeholder="Entrez votre nom d'utilisateur"
               class="w-full px-4 py-2 bg-dark-900 border border-gray-800 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
           />
+          <p v-if="errors.username" class="text-xs text-red-500 mt-1">{{ errors.username }}</p>
         </div>
         <div>
           <label for="email-register" class="block text-sm font-medium mb-1">Email</label>
           <input
               type="email"
               id="email-register"
+              v-model="registerForm.email"
               placeholder="Entrez votre email"
               class="w-full px-4 py-2 bg-dark-900 border border-gray-800 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
           />
+          <p v-if="errors.email" class="text-xs text-red-500 mt-1">{{ errors.email }}</p>
         </div>
         <div class="relative">
           <label for="password-register" class="block text-sm font-medium mb-1">Mot de passe</label>
           <input
               :type="showRegisterPassword ? 'text' : 'password'"
               id="password-register"
+              v-model="registerForm.password"
+              @input="updatePasswordStrength"
               placeholder="Entrez votre mot de passe"
               class="w-full px-4 py-2 bg-dark-900 border border-gray-800 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
           />
@@ -56,11 +62,21 @@
             <Icon :name="showRegisterPassword ? 'mdi:eye-off' : 'mdi:eye'" size="20" />
           </button>
         </div>
+        <!-- Indicateur de solidité du mot de passe -->
+        <div class="mt-1">
+          <div class="h-2 rounded-full overflow-hidden" :class="passwordStrengthColor">
+            <div class="h-full bg-current" :style="{ width: passwordStrengthPercentage + '%' }"></div>
+          </div>
+          <p class="text-xs text-white mt-1">
+            {{ passwordStrengthText }}
+          </p>
+        </div>
         <div class="relative">
           <label for="confirm-password" class="block text-sm font-medium mb-1">Confirmer le mot de passe</label>
           <input
               :type="showConfirmPassword ? 'text' : 'password'"
               id="confirm-password"
+              v-model="registerForm.confirmPassword"
               placeholder="Confirmez votre mot de passe"
               class="w-full px-4 py-2 bg-dark-900 border border-gray-800 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
           />
@@ -73,6 +89,10 @@
           </button>
           <p class="text-xs text-white mt-3 mb-2">
             Au moins 8 caractères (dont 1 lettre majuscule, 1 chiffre et 1 symbole)
+          </p>
+          <!-- Message de correspondance des mots de passe -->
+          <p v-if="registerForm.password && registerForm.confirmPassword" class="text-xs mt-1" :class="passwordsMatch ? 'text-green-500' : 'text-red-500'">
+            {{ passwordsMatch ? 'Les mots de passe correspondent.' : 'Les mots de passe ne correspondent pas.' }}
           </p>
         </div>
         <div class="space-y-3">
@@ -92,7 +112,10 @@
             </span>
           </label>
         </div>
-        <AppButton to="#" variant="primary" class="w-full">S'inscrire</AppButton>
+        <!-- Messages d'erreur ou de succès -->
+        <p v-if="errorMessage" class="text-xs text-red-500 text-center">{{ errorMessage }}</p>
+        <p v-if="successMessage" class="text-xs text-purple-500 text-center">{{ successMessage }}</p>
+        <SubmitButton variant="primary" class="w-full">S'inscrire</SubmitButton>
         <div class="text-center">
           <p class="text-xs text-white mt-2">
             Déjà un compte ?
@@ -160,7 +183,7 @@
 <script lang="ts" setup>
 import AppButton from '~/components/ui/AppButton.vue'
 import SubmitButton from '~/components/ui/SubmitButton.vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { authService } from '~/services/authService'
@@ -169,6 +192,22 @@ import { authService } from '~/services/authService'
 interface LoginForm {
   username: string
   password: string
+}
+
+// Définir les types pour le formulaire d'inscription
+interface RegisterForm {
+  username: string
+  email: string
+  password: string
+  confirmPassword: string
+}
+
+// Définir les types pour les erreurs
+interface FormErrors {
+  username?: string
+  email?: string
+  password?: string
+  confirmPassword?: string
 }
 
 // Lire la query string pour définir l'onglet actif
@@ -188,20 +227,100 @@ const loginForm = ref<LoginForm>({
   password: ''
 })
 
+// Données du formulaire d'inscription
+const registerForm = ref<RegisterForm>({
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+})
+
 // Messages d'erreur ou de succès
 const errorMessage = ref<string>('')
 const successMessage = ref<string>('')
 
+// Gestion des erreurs spécifiques pour chaque champ
+const errors = ref<FormErrors>({})
+
 // Utiliser le store Pinia pour gérer l'état d'authentification
 const authStore = useAuthStore()
 
+// Calculer si les mots de passe correspondent
+const passwordsMatch = computed(() => {
+  return registerForm.value.password === registerForm.value.confirmPassword && registerForm.value.password !== ''
+})
+
+// Gestion de la solidité du mot de passe
+const passwordStrength = ref<number>(0) // Score de solidité (0 à 4)
+const passwordStrengthColor = computed(() => {
+  if (passwordStrength.value === 0) return 'bg-gray-800'
+  if (passwordStrength.value <= 1) return 'bg-red-500'
+  if (passwordStrength.value === 2) return 'bg-orange-500'
+  if (passwordStrength.value === 3) return 'bg-yellow-500'
+  return 'bg-green-500'
+})
+
+const passwordStrengthPercentage = computed(() => {
+  return passwordStrength.value * 25 // 0 à 100%
+})
+
+const passwordStrengthText = computed(() => {
+  if (passwordStrength.value === 0) return ''
+  if (passwordStrength.value <= 1) return 'Mot de passe très faible'
+  if (passwordStrength.value === 2) return 'Mot de passe faible'
+  if (passwordStrength.value === 3) return 'Mot de passe moyen'
+  return 'Mot de passe fort'
+})
+
+const updatePasswordStrength = () => {
+  const password = registerForm.value.password
+  let strength = 0
+
+  // Critères de solidité
+  if (password.length >= 8) strength += 1
+  if (/[A-Z]/.test(password)) strength += 1
+  if (/[0-9]/.test(password)) strength += 1
+  if (/[^A-Za-z0-9]/.test(password)) strength += 1
+
+  passwordStrength.value = strength
+}
+
+// Validation des champs avant soumission
+const validateForm = () => {
+  errors.value = {}
+
+  // Validation du username
+  if (!registerForm.value.username) {
+    errors.value.username = 'Le nom d’utilisateur est requis.'
+  } else if (registerForm.value.username.length < 3) {
+    errors.value.username = 'Le nom d’utilisateur doit contenir au moins 3 caractères.'
+  }
+
+  // Validation de l'email
+  if (!registerForm.value.email) {
+    errors.value.email = 'L’email est requis.'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerForm.value.email)) {
+    errors.value.email = 'L’email n’est pas valide.'
+  }
+
+  // Validation des mots de passe
+  if (!registerForm.value.password) {
+    errors.value.password = 'Le mot de passe est requis.'
+  }
+
+  if (!registerForm.value.confirmPassword) {
+    errors.value.confirmPassword = 'La confirmation du mot de passe est requise.'
+  }
+
+  return Object.keys(errors.value).length === 0
+}
+
 // Gestion de la soumission du formulaire de connexion
 const handleLogin = async () => {
-  console.log('handleLogin called') // Log pour vérifier que la méthode est appelée
+  console.log('handleLogin called')
   errorMessage.value = ''
   successMessage.value = ''
 
-  // Validation simple
   if (!loginForm.value.username || !loginForm.value.password) {
     errorMessage.value = 'Veuillez remplir tous les champs.'
     console.log('Validation failed: champs vides')
@@ -213,6 +332,69 @@ const handleLogin = async () => {
     const response = await authService.login(loginForm.value.username, loginForm.value.password)
     console.log('API response:', response)
 
+    authStore.setAuthData({
+      refresh: response.refresh,
+      access: response.access,
+      refreshExpiresIn: response.refresh_expires_in,
+      accessExpiresIn: response.access_expires_in
+    })
+
+    // Récupérer les informations de l'utilisateur connecté
+    const userResponse = await authService.getCurrentUser()
+    authStore.setCurrentUser(userResponse)
+
+    successMessage.value = 'Connexion réussie !'
+    loginForm.value.username = ''
+    loginForm.value.password = ''
+    router.push('/')
+  } catch (error: any) {
+    console.error('Erreur lors de la connexion:', error)
+    if (error.message === 'Refresh token expired. Please log in again.') {
+      errorMessage.value = 'Session expirée. Veuillez vous reconnecter.'
+      router.push('/auth?tab=login')
+    } else if (error.response) {
+      errorMessage.value = error.response._data?.message || 'Erreur lors de la connexion.'
+    } else {
+      errorMessage.value = 'Erreur réseau. Veuillez réessayer.'
+    }
+  }
+}
+
+// Gestion de la soumission du formulaire d'inscription
+const handleRegister = async () => {
+  console.log('handleRegister called')
+  errorMessage.value = ''
+  successMessage.value = ''
+  errors.value = {}
+
+  // Valider le formulaire
+  if (!validateForm()) {
+    errorMessage.value = 'Veuillez corriger les erreurs dans le formulaire.'
+    return
+  }
+
+  if (!passwordsMatch.value) {
+    errorMessage.value = 'Les mots de passe ne correspondent pas.'
+    return
+  }
+
+  if (!acceptTerms.value) {
+    errorMessage.value = 'Vous devez accepter les conditions générales.'
+    return
+  }
+
+  try {
+    console.log('Attempting registration with:', registerForm.value)
+    const response = await authService.register(
+        registerForm.value.username,
+        registerForm.value.email,
+        registerForm.value.password,
+        registerForm.value.confirmPassword,
+        acceptTerms.value,
+        subscribeNewsletter.value
+    )
+    console.log('API response:', response)
+
     // Stocker les tokens dans le store Pinia
     authStore.setAuthData({
       refresh: response.refresh,
@@ -221,24 +403,28 @@ const handleLogin = async () => {
       accessExpiresIn: response.access_expires_in
     })
 
+    // Récupérer les informations de l'utilisateur connecté
+    const userResponse = await authService.getCurrentUser()
+    authStore.setCurrentUser(userResponse)
+
     // Afficher un message de succès
-    successMessage.value = 'Connexion réussie !'
+    successMessage.value = 'Inscription réussie ! Bienvenue sur Fliiply.'
 
     // Réinitialiser le formulaire
-    loginForm.value.username = ''
-    loginForm.value.password = ''
+    registerForm.value.username = ''
+    registerForm.value.email = ''
+    registerForm.value.password = ''
+    registerForm.value.confirmPassword = ''
+    acceptTerms.value = false
+    subscribeNewsletter.value = false
+    passwordStrength.value = 0
 
     // Rediriger vers la page d'accueil
     router.push('/')
   } catch (error: any) {
-    console.error('Erreur lors de la connexion:', error)
-    // Gérer les erreurs
-    if (error.message === 'Refresh token expired. Please log in again.') {
-      errorMessage.value = 'Session expirée. Veuillez vous reconnecter.'
-      // Rediriger vers la page de connexion
-      router.push('/auth?tab=login')
-    } else if (error.response) {
-      errorMessage.value = error.response._data?.message || 'Erreur lors de la connexion.'
+    console.error('Erreur lors de l\'inscription:', error)
+    if (error.response) {
+      errorMessage.value = error.response._data?.message || 'Erreur lors de l\'inscription.'
     } else {
       errorMessage.value = 'Erreur réseau. Veuillez réessayer.'
     }
