@@ -181,7 +181,6 @@
 </template>
 
 <script lang="ts" setup>
-import AppButton from '~/components/ui/AppButton.vue'
 import SubmitButton from '~/components/ui/SubmitButton.vue'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -343,15 +342,20 @@ const handleLogin = async () => {
     const userResponse = await authService.getCurrentUser()
     authStore.setCurrentUser(userResponse)
 
-    successMessage.value = 'Connexion réussie !'
-    loginForm.value.username = ''
-    loginForm.value.password = ''
-    router.push('/')
-  } catch (error: any) {
+    if (userResponse.is_email_verified) {
+      successMessage.value = 'Connexion réussie !'
+      loginForm.value.username = ''
+      loginForm.value.password = ''
+      await router.push('/')
+    } else {
+      successMessage.value = 'Connexion réussie, mais veuillez vérifier votre e-mail.'
+      await router.push('/email/verification')
+    }
+  } catch (error: never) {
     console.error('Erreur lors de la connexion:', error)
     if (error.message === 'Refresh token expired. Please log in again.') {
       errorMessage.value = 'Session expirée. Veuillez vous reconnecter.'
-      router.push('/auth?tab=login')
+      await router.push('/auth?tab=login')
     } else if (error.response) {
       errorMessage.value = error.response._data?.message || 'Erreur lors de la connexion.'
     } else {
@@ -410,18 +414,21 @@ const handleRegister = async () => {
     // Afficher un message de succès
     successMessage.value = 'Inscription réussie ! Bienvenue sur Fliiply.'
 
-    // Réinitialiser le formulaire
-    registerForm.value.username = ''
-    registerForm.value.email = ''
-    registerForm.value.password = ''
-    registerForm.value.confirmPassword = ''
-    acceptTerms.value = false
-    subscribeNewsletter.value = false
-    passwordStrength.value = 0
-
-    // Rediriger vers la page d'accueil
-    router.push('/')
-  } catch (error: any) {
+    if (userResponse.is_email_verified) {
+      successMessage.value = 'Inscription réussie ! Bienvenue sur Fliiply.'
+      registerForm.value.username = ''
+      registerForm.value.email = ''
+      registerForm.value.password = ''
+      registerForm.value.confirmPassword = ''
+      acceptTerms.value = false
+      subscribeNewsletter.value = false
+      passwordStrength.value = 0
+      await router.push('/')
+    } else {
+      successMessage.value = 'Inscription réussie ! Veuillez vérifier votre e-mail.'
+      await router.push('/email/verification')
+    }
+  } catch (error: never) {
     console.error('Erreur lors de l\'inscription:', error)
     if (error.response) {
       errorMessage.value = error.response._data?.message || 'Erreur lors de l\'inscription.'

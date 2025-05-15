@@ -95,5 +95,28 @@ export const authService = {
         } catch (error) {
             throw error
         }
+    },
+
+    async resendVerificationEmail(email: string): Promise<void> {
+        // eslint-disable-next-line no-useless-catch
+        try {
+            await apiService.fetch('/auth/resend_verification_email/', {
+                method: 'POST',
+                body: { email }
+            })
+        } catch (error) {
+            throw error
+        }
+    },
+
+    async verifyEmail(uidb64: string, token: string): Promise<void> {
+        // eslint-disable-next-line no-useless-catch
+        try {
+            await apiService.fetch(`/auth/verify_email/?uidb64=${encodeURIComponent(uidb64)}&token=${encodeURIComponent(token)}`, {
+                method: 'GET',
+            })
+        } catch (error) {
+            throw error
+        }
     }
 }
